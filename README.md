@@ -1,4 +1,4 @@
-# Project Name
+# ChatGPT VSCode Extension Project
 Put here a short paragraph describing your project. 
 Adding an screenshot or a mockup of your application in action would be nice.  
 
