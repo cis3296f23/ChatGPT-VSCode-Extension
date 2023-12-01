@@ -20,6 +20,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// Put configuration settings into the provider
 	provider.setAuthenticationInfo({
 		apiKey: config.get('apiKey')
+		
 	});
 	provider.setSettings({
 		selectedInsideCodeblock: config.get('selectedInsideCodeblock') || false,
