@@ -1,57 +1,118 @@
-# ChatGPT VSCode Extension Project
-The goal of HCiQuery is to understand the best way of structuring a query in order to utilize 
-artificial intelligence engines, such as ChatGPT, to the best of your ability. This project will 
-have four main stages. The VSCode plug-in enables the capturing of user data, the database to grab 
-and store the query data, an in-depth analysis of the extracted data, and finally, a way of 
-visualizing the data and explaining the findings to both researchers and developers.
+# ChatGPT and GPT4 extension for VSCode
 
-The VSCode plug-in will be an interface located next to the user's code editor that will allow for 
-the interaction between user and ChatGPT remotely. User’s will be able to type in anything they 
-please, whether it be code to be reformatted or a question regarding anything computer science 
-related. Upon entering a query, the plug-in will use a token to remotely connect with the ChatGPT 
-API. Once authenticated, the query will be processed with ChatGPT and sent back to the plug-in, 
-which will then be displayed to the user within the contents of the editor.
+[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/timkmecl.chatgpt)](https://marketplace.visualstudio.com/items?itemName=timkmecl.chatgpt)
+[![Visual Studio Marketplace Rating (Stars)](https://img.shields.io/visual-studio-marketplace/stars/timkmecl.chatgpt)](https://marketplace.visualstudio.com/items?itemName=timkmecl.chatgpt)
+[![Visual Studio Marketplace Downloads](https://img.shields.io/visual-studio-marketplace/d/timkmecl.chatgpt)](https://marketplace.visualstudio.com/items?itemName=timkmecl.chatgpt)
+[![Github stars](https://img.shields.io/github/stars/timkmecl/chatgpt-vscode)](https://github.com/timkmecl/chatgpt-vscode)
 
-In addition to the response being displayed to the user, the timestamped response and query will 
-both be sent and stored in a Firebase database. This database will be organized by time, code 
-queries, question queries, and more.
+This Visual Studio Code extension allows you to use the [ChatGPT API](https://github.com/transitive-bullshit/chatgpt-api) to generate code or natural language responses from OpenAI's [ChatGPT](https://chat.openai.com/chat) or [GPT4](https://openai.com/product/gpt-4) to your questions, right within the editor.
 
-Before we can understand our data, it is important that the data be engineered and analyzed in a 
-way that can begin to draw insights before it is visualized. This step will involve a lot of data 
-science methodologies for goals such as combining common groups of words, most frequently used 
-words, and more.
+Supercharge your coding with AI-powered assistance! Automatically write new code from scratch, ask questions, get explanations, refactor code, find bugs and more 🚀✨
 
-The last stage, visualization, is when all of the previous steps come to fruition. Researchers and 
-developers will be able to accurately visualize how ChatGPT is used, and how people can benefit 
-from writing better written queries to help their efficiency at work and in academia.  
+### Links:
 
-![This is a screenshot.](diagram.png)
-# How to run
-Provide here instructions on how to use your application.   
-- Download the latest binary from the Release section on the right on GitHub.  
-- On the command line uncompress using
-```
-tar -xzf  
-```
-- On the command line run with
-```
-./hello
-```
-- You will see Hello World! on your terminal. 
+- **[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=timkmecl.chatgpt)**
+- **[Github Repository](https://github.com/timkmecl/chatgpt-vscode)**
 
-# How to contribute
-Follow this project board to know the latest status of the project: [https://github.com/orgs/cis3296f23/projects/122](https://github.com/orgs/cis3296f23/projects/122/views/2)
+<br/>
 
-### How to build
-- Use this github repository: 
-- Main branch will have most update-to-date version of the project
-- Use VS Code
-- Specify additional library to download if needed 
-- Steps to run:
-1) Download CodeGPT: write and improve code using AI from Extensions.
-2) You will need to add your OpenAI API key to the Extension settings in VS Code. To obtain API key, Go to OpenAI's website. If you don't have an account, you will need to create one or sign up using your Google.
-3) Click on the Create new secret key button and copy it
-4) Now open your VS Code, open Settings, click Extensions drop-down menu and fint the CodeGPT, and paste the API key in API key from OpenAI.
 
-- What is expected to happen when the app start. 
-On main screen, users will able to code and on side panel will have accesss to ChatGPT
+
+<img src="examples/main.png" alt="Refactoring selected code using chatGPT"/>
+
+## Features
+- 💡 **Ask general questions** or use code snippets from the editor to query ChatGPT via an input box in the sidebar
+- 🖱️ Right click on a code selection and run one of the context menu **shortcuts**
+	- automatically write documentation for your code
+	- explain the selected code
+	- refactor or optimize it
+	- find problems with it
+- 💻 View ChatGPT's responses in a panel next to the editor
+- 🚀 See the response as it is being generated **in real time**
+- 💬 Ask **follow-up questions** to the response (conversation context is maintained)
+- 📝 **Insert code snippets** from the AI's response into the active editor by clicking on them
+
+
+
+## Setup
+
+To use this extension, install it from the VSCode marketplace.
+
+1. After the installation is complete, you will need to add your OpenAI API key to the extension settings in VSCode. To do this, open the `Settings` panel by going to the `File` menu and selecting `Preferences`, then `Settings`.
+2. In the search bar, type `ChatGPT` to filter the settings list.
+3. In the ChatGPT section, enter your API key in the top field
+
+After completing these steps, the extension should be ready to use.
+
+
+<details>
+<summary><b>Building from source (not applicable for VSCode marketplace version)</b></summary>
+
+To build the extension from source, clone the repository and delete the node_modules folder. Then, run 'npm install' in the project folder. Then, run the command 'yarn run compile'.
+</details>
+
+
+
+### Obtaining API key
+
+To use this extension, you will need an API key from OpenAI. To obtain one, follow these steps:
+
+1. Go to [OpenAI's website](https://platform.openai.com/account/api-keys). If you don't have an account, you will need to create one or sign up using your Google or Microsoft account.
+2. Click on the `Create new secret key` button.
+3. Copy the key and paste it into the `API Key` field in the extension settings.
+
+### Settings
+
+The extension can be configured or customized by changing several settings. 
+You can choose **between ChatGPT and GPT4** by changing the `Model` setting (only if you already have access to GPT4 API). A custom API URL can also be set in the `API URL` field (probably looks something like `https://openai.xxxxxx.net/v1`, can be used to connect to a self-hosted instance of the API or a proxy).
+
+
+
+
+## Using the Extension
+
+To use the extension, open a text editor in Visual Studio Code and open the ChatGPT panel by clicking on the ChatGPT icon in the sidebar. This will open a panel with an input field where you can enter your prompt or question. By clicking enter, it will be sent to ChatGPT. Its response will be displayed below the input field in the sidebar (note that it may take some time for it to be calculated).
+
+<img src="examples/create.png" alt="Writing new code using chatGPT" width="500"/>
+
+You can also select a code snippet in the editor and then enter a prompt in the side panel, or right-click and select "Ask ChatGPT". The **selected code will be automatically appended** to your query when it is sent to the AI. This can be useful for generating code snippets or getting explanations for specific pieces of code.
+
+<img src="examples/explain.png" alt="Refactoring selected code using chatGPT"/>
+
+To **insert a code snippet** from the AI's response into the editor, simply click on the code block in the panel. The code will be automatically inserted at the cursor position in the active editor.
+
+<img src="examples/refactor.png" alt="chatGPT explaining selected code"/>
+
+You can select some code in the editor, right click on it and choose one of the following **shortcuts** from the context menu:
+#### Commands:
+- `Ask ChatGPT`: will provide a prompt for you to enter any query
+- `ChatGPT: Explain selection`: will explain what the selected code does
+- `ChatGPT: Refactor selection`: will try to refactor the selected code
+- `ChatGPT: Find problems`: looks for problems/errors in the selected code, fixes and explains them
+- `ChatGPT: Optimize selection`: tries to optimize the selected code
+
+`Ask ChatGPT` is also available when nothing is selected. For the other four commands, you can **customize the exact prompt** that will be sent to the AI by editing the extension settings in VSCode Preferences.
+
+
+Because ChatGPT is a conversational AI, you can ask follow-up questions to the response. The conversation context is maintained between queries, so you can ask multiple questions in a row (this can be disabled in the extension settings.). 
+If you aren't satisfied with an answer and would like to **retry the request**, click `ctrl+shift+p` and select `Retry ChatGPT request`. To **reset the conversation context**, click `ctrl+shift+p` and select `ChatGPT: Reset Conversation`.
+
+---
+
+Please note that this extension is currently a proof of concept and may have some limitations or bugs. We welcome feedback and contributions to improve the extension. Also check out [CodeGPT](https://github.com/timkmecl/codegpt) extension that uses official OpenAI API and also supports other GPT3 models.
+If you enjoy this extension, please consider [buying me a coffee ☕️](https://www.buymeacoffee.com/timkmecl) to support my work! 
+
+
+<a href="https://www.buymeacoffee.com/timkmecl" target="_blank">
+<img src="/resources/buy-default-yellow-small.png" alt="Buy Me A Coffee" style={{height: "40px"}} />
+</a>
+
+
+
+
+## Credits
+
+- This wouldn't be possible without OpenAI's [ChatGPT](https://chat.openai.com/chat)
+- The extension makes use of [chatgpt-api](https://github.com/transitive-bullshit/chatgpt-api) (by [Travis Fischer](https://github.com/transitive-bullshit)), which uses unofficial ChatGPT API in order to login and communicate with it.
+- The project was started by [mpociot](https://github.com/mpociot/)
+- `v0.3` inspired by [barnesoir/chatgpt-vscode-plugin](https://github.com/barnesoir/chatgpt-vscode-plugin) and [gencay/vscode-chatgpt](https://github.com/gencay/vscode-chatgpt)
