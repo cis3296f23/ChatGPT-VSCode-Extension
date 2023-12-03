@@ -1,5 +1,8 @@
 import * as vscode from 'vscode';
 import { ChatGPTAPI } from 'chatgpt';
+import * as os from 'os';
+import * as fs from 'fs';
+import * as path from 'path';
 
 
 type AuthInfo = {apiKey?: string};
@@ -93,10 +96,6 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 }
 
-
-
-
-
 class ChatGPTViewProvider implements vscode.WebviewViewProvider {
 	public static readonly viewType = 'chatgpt.chatView';
 	private _view?: vscode.WebviewView;
@@ -119,6 +118,10 @@ class ChatGPTViewProvider implements vscode.WebviewViewProvider {
 		model: 'gpt-3.5-turbo'
 	};
 	private _authInfo?: AuthInfo;
+
+	//file path for the logging csv file - currently places it in the home directory
+	//I was facing some issues attempting to place the log in the same directory as the extension
+	private logFilePath = path.join(os.homedir(), 'chatgpt_logs.csv');
 
 	// In the constructor, we store the URI of the extension
 	constructor(private readonly _extensionUri: vscode.Uri) {
@@ -217,6 +220,16 @@ class ChatGPTViewProvider implements vscode.WebviewViewProvider {
 		this._view?.webview.postMessage({ type: 'addResponse', value: '' });
 	}
 
+	//csv logging function
+	private _logToCSV(source: string, message: string) {
+		//grabs timestamp in YYYY-MM-DDTHH:mm:ss.sssZ format
+		//the Z represents the UTC timezone
+		const timestamp = new Date().toISOString();
+		//format of the csv: timestamp, source (either user or gpt), message
+		const logEntry = `${timestamp},${source},${message}\n`;
+		//appending to the csv file
+		fs.appendFileSync(this.logFilePath, logEntry);
+	}
 
 	public async search(prompt?:string) {
 		this._prompt = prompt;
@@ -257,6 +270,9 @@ class ChatGPTViewProvider implements vscode.WebviewViewProvider {
 			// Otherwise, just use the prompt if user typed it
 			searchPrompt = prompt;
 		}
+		//this logs the user's prompt, intercepting it before it's sent to chatGPT
+		//it should include any highlighted code that's included in the prompt
+		this._logToCSV('User', searchPrompt);
 		this._fullPrompt = searchPrompt;
 
 		// Increment the message number
@@ -302,6 +318,9 @@ class ChatGPTViewProvider implements vscode.WebviewViewProvider {
 				console.log(res);
 
 				response = res.text;
+				//this logs the chatGPT response in the csv file, at the same time it's being logged in the console
+				//if we want to incldue the tokens used, we could move this a few lines down
+				this._logToCSV('GPT', response);
 				if (res.detail?.usage?.total_tokens) {
 					response += `\n\n---\n*<sub>Tokens used: ${res.detail.usage.total_tokens} (${res.detail.usage.prompt_tokens}+${res.detail.usage.completion_tokens})</sub>*`;
 				}
