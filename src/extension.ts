@@ -1,5 +1,11 @@
 import * as vscode from 'vscode';
 import { ChatGPTAPI } from 'chatgpt';
+import * as fs from 'fs';
+const { createWriteStream } = fs;
+const os = require('os');
+import * as csv from 'csv-parser';
+import * as path from 'path';
+import * as createCsvWriter from 'csv-writer';
 
 
 type AuthInfo = {apiKey?: string};
@@ -21,6 +27,7 @@ export function activate(context: vscode.ExtensionContext) {
 	provider.setAuthenticationInfo({
 		apiKey: config.get('apiKey')
 	});
+
 	provider.setSettings({
 		selectedInsideCodeblock: config.get('selectedInsideCodeblock') || false,
 		codeblockWithLanguageId: config.get('codeblockWithLanguageId') || false,
@@ -327,12 +334,41 @@ class ChatGPTViewProvider implements vscode.WebviewViewProvider {
 		// Saves the response
 		this._response = response;
 
+		if (response) {
+            await this.writeToCSV(this._fullPrompt, response);
+        }
+
 		// Show the view and send a message to the webview with the response
 		if (this._view) {
 			this._view.show?.(true);
 			this._view.webview.postMessage({ type: 'addResponse', value: response });
 		}
 	}
+
+
+	private async writeToCSV(query: string, response: string) {
+        const desktop = path.join(os.homedir(), 'Desktop');
+   		const fpath = path.join(desktop, 'logs.csv');
+        const appendToFile = fs.existsSync(fpath);
+        const csvWriter = createCsvWriter.createObjectCsvWriter({
+            path: fpath,
+            header: [
+                { id: 'user query', title: 'Query' },
+                { id: 'gpt response', title: 'Response' },
+            ],
+            append: appendToFile,
+        });
+
+        const records = [{ query, response }];
+
+        try {
+            await csvWriter.writeRecords(records);
+            console.log('logs.csv updated!');
+        } catch (err) {
+            console.error('error writing: ', err);
+        }
+    }
+	
 
 	private _getHtmlForWebview(webview: vscode.Webview) {
 
