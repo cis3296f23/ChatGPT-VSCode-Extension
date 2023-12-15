@@ -10,7 +10,7 @@ const BASE_URL = 'https://api.openai.com/v1';
 
 export function activate(context: vscode.ExtensionContext) {
 
-	console.log('activating extension "chatgpt"');
+	console.log('Test activating extension "chatgpt"');
 	// Get the settings from the extension's configuration
 	const config = vscode.workspace.getConfiguration('chatgpt');
 
