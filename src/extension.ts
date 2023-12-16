@@ -119,7 +119,6 @@ class CodeLogger {
 	}
 
 	constructor(private readonly _extensionUri: vscode.Uri) {
-		this._logToCSV('Logged on activation!\n');
 	}
 
 	logLine() {
