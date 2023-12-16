@@ -40,12 +40,7 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
-    "snippets": [
 
-      {
-        "path": "snippets/extension-snippets.code-snippets"
-      }
-    ],
     "keybindings": [
       {
         "command": "chatgpt.logLine",
