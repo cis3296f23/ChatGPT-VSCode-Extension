@@ -1,13 +1,19 @@
 import * as vscode from 'vscode';
 import { ChatGPTAPI } from 'chatgpt';
+//import { MongoDBClient } from 'mongodb';
+
+
 import * as os from 'os';
 import * as fs from 'fs';
-import * as path from 'path';
+//import * as path from 'path';
+//use('mongodbVSCodePlaygroundDB');
 
+//const myDB = client.db("ChatGPT");
+//const myColl = myDB.collection("ChatGPT");
 
 type AuthInfo = {apiKey?: string};
 type Settings = {selectedInsideCodeblock?: boolean, codeblockWithLanguageId?: false, pasteOnClick?: boolean, keepConversation?: boolean, timeoutLength?: number, model?: string, apiUrl?: string};
-
+const path = require('path');
 
 const BASE_URL = 'https://api.openai.com/v1';
 
@@ -121,7 +127,8 @@ class ChatGPTViewProvider implements vscode.WebviewViewProvider {
 
 	//file path for the logging csv file - currently places it in the home directory
 	//I was facing some issues attempting to place the log in the same directory as the extension
-	private logFilePath = path.join(os.homedir(), 'chatgpt_logs.csv');
+	
+	private logFilePath = path.join(__dirname, 'chatgpt_logs.csv');
 
 	// In the constructor, we store the URI of the extension
 	constructor(private readonly _extensionUri: vscode.Uri) {
@@ -219,14 +226,15 @@ class ChatGPTViewProvider implements vscode.WebviewViewProvider {
 		this._view?.webview.postMessage({ type: 'setPrompt', value: '' });
 		this._view?.webview.postMessage({ type: 'addResponse', value: '' });
 	}
-
+	//db.ChatGPT.insert();
 	//csv logging function
-	private _logToCSV(source: string, message: string) {
+	public _logToCSV(source: string, message: string) {
 		//grabs timestamp in YYYY-MM-DDTHH:mm:ss.sssZ format
 		//the Z represents the UTC timezone
 		const timestamp = new Date().toISOString();
 		//format of the csv: timestamp, source (either user or gpt), message
 		const logEntry = `${timestamp},${source},${message}\n`;
+		debugger
 		//appending to the csv file
 		fs.appendFileSync(this.logFilePath, logEntry);
 	}
