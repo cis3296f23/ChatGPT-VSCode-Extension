@@ -35,10 +35,34 @@
     "onCommand:chatgpt.review",
     "onCommand:chatgpt.optimize",
     "onCommand:chatgpt.findProblems",
-    "onCommand:chatgpt.documentation"
+    "onCommand:chatgpt.documentation",
+    "onCommand:chatgpt.logLine"
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "snippets": [
+
+      {
+        "path": "snippets/extension-snippets.code-snippets"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "runCommands",
+        "key": "enter",
+        "when": "editorTextFocus",
+        "args": {
+          "commands": [
+            "chatgpt.logLine",
+            "editor.action.insertSnippet"
+          ],
+          "snippets":
+          [
+            "newline"
+          ]
+        }
+    }
+    ],
     "commands": [
       {
         "command": "chatgpt.ask",
