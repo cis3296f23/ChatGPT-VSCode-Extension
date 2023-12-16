@@ -13,12 +13,18 @@ const BASE_URL = 'https://api.openai.com/v1';
 
 export function activate(context: vscode.ExtensionContext) {
 
-	console.log('Test activating extension "chatgpt"');
+
+
+
+	console.log('activating extension "chatgpt"');
+
 	// Get the settings from the extension's configuration
 	const config = vscode.workspace.getConfiguration('chatgpt');
 
 	// Create a new ChatGPTViewProvider instance and register it with the extension's context
 	const provider = new ChatGPTViewProvider(context.extensionUri);
+
+	const logger = new CodeLogger(context.extensionUri);
 
 	// Put configuration settings into the provider
 	provider.setAuthenticationInfo({
@@ -61,7 +67,10 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('chatgpt.optimize', () => commandHandler('promptPrefix.optimize')),
 		vscode.commands.registerCommand('chatgpt.findProblems', () => commandHandler('promptPrefix.findProblems')),
 		vscode.commands.registerCommand('chatgpt.documentation', () => commandHandler('promptPrefix.documentation')),
-		vscode.commands.registerCommand('chatgpt.resetConversation', () => provider.resetConversation())
+		vscode.commands.registerCommand('chatgpt.resetConversation', () => provider.resetConversation()),
+		vscode.commands.registerCommand('chatgpt.logLine', () =>
+		logger.logLine()
+		)
 	);
 
 
@@ -96,6 +105,43 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 }
 
+
+class CodeLogger {
+	private codeLogFilePath = path.join(os.homedir(), 'codelogs.csv');
+
+	//logging function from Ali's contribution
+	private _logToCSV(line: string) {
+		//grabs timestamp in YYYY-MM-DDTHH:mm:ss.sssZ format
+		//the Z represents the UTC timezone
+		const timestamp = new Date().toISOString();
+		//format of the csv: timestamp, line of code
+		const logEntry = `${timestamp},${line}\n`;
+		//appending to the csv file
+		fs.appendFileSync(this.codeLogFilePath, logEntry);
+	}
+
+	constructor(private readonly _extensionUri: vscode.Uri) {
+	}
+
+	logLine() {
+		const activeEditor = vscode.window.activeTextEditor;
+		if (!activeEditor) {
+		  return;
+		}
+
+		const {text} = activeEditor.document.lineAt(activeEditor.selection.active.line);
+		const line: string = text.toString();
+		this._logToCSV(line);
+	}
+
+
+
+
+
+	
+
+}
+
 class ChatGPTViewProvider implements vscode.WebviewViewProvider {
 	public static readonly viewType = 'chatgpt.chatView';
 	private _view?: vscode.WebviewView;
@@ -122,6 +168,8 @@ class ChatGPTViewProvider implements vscode.WebviewViewProvider {
 	//file path for the logging csv file - currently places it in the home directory
 	//I was facing some issues attempting to place the log in the same directory as the extension
 	private logFilePath = path.join(os.homedir(), 'chatgpt_logs.csv');
+
+
 
 	// In the constructor, we store the URI of the extension
 	constructor(private readonly _extensionUri: vscode.Uri) {

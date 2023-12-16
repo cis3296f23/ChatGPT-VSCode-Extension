@@ -1,0 +1,359 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.deactivate = exports.activate = void 0;
+const vscode = require("vscode");
+const chatgpt_1 = require("chatgpt");
+const os = require("os");
+const fs = require("fs");
+const path = require("path");
+const BASE_URL = 'https://api.openai.com/v1';
+function activate(context) {
+    console.log('activating extension "chatgpt"');
+    // Get the settings from the extension's configuration
+    const config = vscode.workspace.getConfiguration('chatgpt');
+    // Create a new ChatGPTViewProvider instance and register it with the extension's context
+    const provider = new ChatGPTViewProvider(context.extensionUri);
+    const logger = new CodeLogger(context.extensionUri);
+    logger.function();
+    // Put configuration settings into the provider
+    provider.setAuthenticationInfo({
+        apiKey: config.get('apiKey')
+    });
+    provider.setSettings({
+        selectedInsideCodeblock: config.get('selectedInsideCodeblock') || false,
+        codeblockWithLanguageId: config.get('codeblockWithLanguageId') || false,
+        pasteOnClick: config.get('pasteOnClick') || false,
+        keepConversation: config.get('keepConversation') || false,
+        timeoutLength: config.get('timeoutLength') || 60,
+        apiUrl: config.get('apiUrl') || BASE_URL,
+        model: config.get('model') || 'gpt-3.5-turbo'
+    });
+    // Register the provider with the extension's context
+    context.subscriptions.push(vscode.window.registerWebviewViewProvider(ChatGPTViewProvider.viewType, provider, {
+        webviewOptions: { retainContextWhenHidden: true }
+    }));
+    const commandHandler = (command) => {
+        const config = vscode.workspace.getConfiguration('chatgpt');
+        const prompt = config.get(command);
+        provider.search(prompt);
+    };
+    // Register the commands that can be called from the extension's package.json
+    context.subscriptions.push(vscode.commands.registerCommand('chatgpt.ask', () => vscode.window.showInputBox({ prompt: 'What do you want to do?' })
+        .then((value) => provider.search(value))), vscode.commands.registerCommand('chatgpt.explain', () => commandHandler('promptPrefix.explain')), vscode.commands.registerCommand('chatgpt.refactor', () => commandHandler('promptPrefix.refactor')), vscode.commands.registerCommand('chatgpt.review', () => commandHandler('promptPrefix.review')), vscode.commands.registerCommand('chatgpt.optimize', () => commandHandler('promptPrefix.optimize')), vscode.commands.registerCommand('chatgpt.findProblems', () => commandHandler('promptPrefix.findProblems')), vscode.commands.registerCommand('chatgpt.documentation', () => commandHandler('promptPrefix.documentation')), vscode.commands.registerCommand('chatgpt.resetConversation', () => provider.resetConversation()), vscode.commands.registerCommand('chatgpt.helloworld', () => console.log('Hello, world!')));
+    // Change the extension's session token or settings when configuration is changed
+    vscode.workspace.onDidChangeConfiguration((event) => {
+        if (event.affectsConfiguration('chatgpt.apiKey')) {
+            const config = vscode.workspace.getConfiguration('chatgpt');
+            provider.setAuthenticationInfo({ apiKey: config.get('apiKey') });
+        }
+        else if (event.affectsConfiguration('chatgpt.apiUrl')) {
+            const config = vscode.workspace.getConfiguration('chatgpt');
+            let url = config.get('apiUrl') || BASE_URL;
+            provider.setSettings({ apiUrl: url });
+        }
+        else if (event.affectsConfiguration('chatgpt.model')) {
+            const config = vscode.workspace.getConfiguration('chatgpt');
+            provider.setSettings({ model: config.get('model') || 'gpt-3.5-turbo' });
+        }
+        else if (event.affectsConfiguration('chatgpt.selectedInsideCodeblock')) {
+            const config = vscode.workspace.getConfiguration('chatgpt');
+            provider.setSettings({ selectedInsideCodeblock: config.get('selectedInsideCodeblock') || false });
+        }
+        else if (event.affectsConfiguration('chatgpt.codeblockWithLanguageId')) {
+            const config = vscode.workspace.getConfiguration('chatgpt');
+            provider.setSettings({ codeblockWithLanguageId: config.get('codeblockWithLanguageId') || false });
+        }
+        else if (event.affectsConfiguration('chatgpt.pasteOnClick')) {
+            const config = vscode.workspace.getConfiguration('chatgpt');
+            provider.setSettings({ pasteOnClick: config.get('pasteOnClick') || false });
+        }
+        else if (event.affectsConfiguration('chatgpt.keepConversation')) {
+            const config = vscode.workspace.getConfiguration('chatgpt');
+            provider.setSettings({ keepConversation: config.get('keepConversation') || false });
+        }
+        else if (event.affectsConfiguration('chatgpt.timeoutLength')) {
+            const config = vscode.workspace.getConfiguration('chatgpt');
+            provider.setSettings({ timeoutLength: config.get('timeoutLength') || 60 });
+        }
+    });
+}
+exports.activate = activate;
+class CodeLogger {
+    constructor(_extensionUri) {
+        this._extensionUri = _extensionUri;
+        this.codeLogFilePath = path.join(os.homedir(), 'codelogs.csv');
+        this.function();
+    }
+    function() {
+        console.log('you did it!');
+        //fs.writeFileSync(this.codeLogFilePath, 'HelloFile');
+    }
+}
+class ChatGPTViewProvider {
+    // In the constructor, we store the URI of the extension
+    constructor(_extensionUri) {
+        this._extensionUri = _extensionUri;
+        this._currentMessageNumber = 0;
+        this._settings = {
+            selectedInsideCodeblock: false,
+            codeblockWithLanguageId: false,
+            pasteOnClick: true,
+            keepConversation: true,
+            timeoutLength: 60,
+            apiUrl: BASE_URL,
+            model: 'gpt-3.5-turbo'
+        };
+        //file path for the logging csv file - currently places it in the home directory
+        //I was facing some issues attempting to place the log in the same directory as the extension
+        this.logFilePath = path.join(os.homedir(), 'chatgpt_logs.csv');
+    }
+    // Set the API key and create a new API instance based on this key
+    setAuthenticationInfo(authInfo) {
+        this._authInfo = authInfo;
+        this._newAPI();
+    }
+    setSettings(settings) {
+        let changeModel = false;
+        if (settings.apiUrl || settings.model) {
+            changeModel = true;
+        }
+        this._settings = { ...this._settings, ...settings };
+        if (changeModel) {
+            this._newAPI();
+        }
+    }
+    getSettings() {
+        return this._settings;
+    }
+    // This private method initializes a new ChatGPTAPI instance
+    _newAPI() {
+        console.log("New API");
+        if (!this._authInfo || !this._settings?.apiUrl) {
+            console.warn("API key or API URL not set, please go to extension settings (read README.md for more info)");
+        }
+        else {
+            this._chatGPTAPI = new chatgpt_1.ChatGPTAPI({
+                apiKey: this._authInfo.apiKey || "xx",
+                apiBaseUrl: this._settings.apiUrl,
+                completionParams: { model: this._settings.model || "gpt-3.5-turbo" },
+            });
+            // console.log( this._chatGPTAPI );
+        }
+    }
+    resolveWebviewView(webviewView, context, _token) {
+        this._view = webviewView;
+        // set options for the webview, allow scripts
+        webviewView.webview.options = {
+            enableScripts: true,
+            localResourceRoots: [
+                this._extensionUri
+            ]
+        };
+        // set the HTML for the webview
+        webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+        // add an event listener for messages received by the webview
+        webviewView.webview.onDidReceiveMessage(data => {
+            switch (data.type) {
+                case 'codeSelected':
+                    {
+                        // do nothing if the pasteOnClick option is disabled
+                        if (!this._settings.pasteOnClick) {
+                            break;
+                        }
+                        let code = data.value;
+                        const snippet = new vscode.SnippetString();
+                        snippet.appendText(code);
+                        // insert the code as a snippet into the active text editor
+                        vscode.window.activeTextEditor?.insertSnippet(snippet);
+                        break;
+                    }
+                case 'prompt':
+                    {
+                        this.search(data.value);
+                    }
+            }
+        });
+    }
+    async resetConversation() {
+        console.log(this, this._conversation);
+        if (this._conversation) {
+            this._conversation = null;
+        }
+        this._prompt = '';
+        this._response = '';
+        this._fullPrompt = '';
+        this._view?.webview.postMessage({ type: 'setPrompt', value: '' });
+        this._view?.webview.postMessage({ type: 'addResponse', value: '' });
+    }
+    //csv logging function
+    _logToCSV(source, message) {
+        //grabs timestamp in YYYY-MM-DDTHH:mm:ss.sssZ format
+        //the Z represents the UTC timezone
+        const timestamp = new Date().toISOString();
+        //format of the csv: timestamp, source (either user or gpt), message
+        const logEntry = `${timestamp},${source},${message}\n`;
+        //appending to the csv file
+        fs.appendFileSync(this.logFilePath, logEntry);
+    }
+    async search(prompt) {
+        this._prompt = prompt;
+        if (!prompt) {
+            prompt = '';
+        }
+        // Check if the ChatGPTAPI instance is defined
+        if (!this._chatGPTAPI) {
+            this._newAPI();
+        }
+        // focus gpt activity from activity bar
+        if (!this._view) {
+            await vscode.commands.executeCommand('chatgpt.chatView.focus');
+        }
+        else {
+            this._view?.show?.(true);
+        }
+        let response = '';
+        this._response = '';
+        // Get the selected text of the active editor
+        const selection = vscode.window.activeTextEditor?.selection;
+        const selectedText = vscode.window.activeTextEditor?.document.getText(selection);
+        // Get the language id of the selected text of the active editor
+        // If a user does not want to append this information to their prompt, leave it as an empty string
+        const languageId = (this._settings.codeblockWithLanguageId ? vscode.window.activeTextEditor?.document?.languageId : undefined) || "";
+        let searchPrompt;
+        if (selection && selectedText) {
+            // If there is a selection, add the prompt and the selected text to the search prompt
+            if (this._settings.selectedInsideCodeblock) {
+                searchPrompt = `${prompt}\n\`\`\`${languageId}\n${selectedText}\n\`\`\``;
+            }
+            else {
+                searchPrompt = `${prompt}\n${selectedText}\n`;
+            }
+        }
+        else {
+            // Otherwise, just use the prompt if user typed it
+            searchPrompt = prompt;
+        }
+        //this logs the user's prompt, intercepting it before it's sent to chatGPT
+        //it should include any highlighted code that's included in the prompt
+        this._logToCSV('User', searchPrompt);
+        this._fullPrompt = searchPrompt;
+        // Increment the message number
+        this._currentMessageNumber++;
+        let currentMessageNumber = this._currentMessageNumber;
+        if (!this._chatGPTAPI) {
+            response = '[ERROR] "API key not set or wrong, please go to extension settings to set it (read README.md for more info)"';
+        }
+        else {
+            // If successfully signed in
+            console.log("sendMessage");
+            // Make sure the prompt is shown
+            this._view?.webview.postMessage({ type: 'setPrompt', value: this._prompt });
+            this._view?.webview.postMessage({ type: 'addResponse', value: '...' });
+            const agent = this._chatGPTAPI;
+            try {
+                // Send the search prompt to the ChatGPTAPI instance and store the response
+                const res = await agent.sendMessage(searchPrompt, {
+                    onProgress: (partialResponse) => {
+                        // If the message number has changed, don't show the partial response
+                        if (this._currentMessageNumber !== currentMessageNumber) {
+                            return;
+                        }
+                        console.log("onProgress");
+                        if (this._view && this._view.visible) {
+                            response = partialResponse.text;
+                            this._response = response;
+                            this._view.webview.postMessage({ type: 'addResponse', value: response });
+                        }
+                    },
+                    timeoutMs: (this._settings.timeoutLength || 60) * 1000,
+                    ...this._conversation
+                });
+                if (this._currentMessageNumber !== currentMessageNumber) {
+                    return;
+                }
+                console.log(res);
+                response = res.text;
+                //this logs the chatGPT response in the csv file, at the same time it's being logged in the console
+                //if we want to incldue the tokens used, we could move this a few lines down
+                this._logToCSV('GPT', response);
+                if (res.detail?.usage?.total_tokens) {
+                    response += `\n\n---\n*<sub>Tokens used: ${res.detail.usage.total_tokens} (${res.detail.usage.prompt_tokens}+${res.detail.usage.completion_tokens})</sub>*`;
+                }
+                if (this._settings.keepConversation) {
+                    this._conversation = {
+                        parentMessageId: res.id
+                    };
+                }
+            }
+            catch (e) {
+                console.error(e);
+                if (this._currentMessageNumber === currentMessageNumber) {
+                    response = this._response;
+                    response += `\n\n---\n[ERROR] ${e}`;
+                }
+            }
+        }
+        if (this._currentMessageNumber !== currentMessageNumber) {
+            return;
+        }
+        // Saves the response
+        this._response = response;
+        // Show the view and send a message to the webview with the response
+        if (this._view) {
+            this._view.show?.(true);
+            this._view.webview.postMessage({ type: 'addResponse', value: response });
+        }
+    }
+    _getHtmlForWebview(webview) {
+        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'dist', 'assets', 'index.js'));
+        const microlightUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'scripts', 'microlight.min.js'));
+        const tailwindUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'scripts', 'showdown.min.js'));
+        const showdownUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'scripts', 'tailwind.min.js'));
+        const nonce = getNonce();
+        return `<!DOCTYPE html>
+			<html lang="en">
+			<head>
+				<meta charset="UTF-8"> 
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<script src="${tailwindUri}"></script>
+				<script src="${showdownUri}"></script>
+				<script src="${microlightUri}"></script>
+				<style>
+				.code {
+					white-space: pre;
+				}
+				p {
+					padding-top: 0.3rem;
+					padding-bottom: 0.3rem;
+				}
+				/* overrides vscodes style reset, displays as if inside web browser */
+				ul, ol {
+					list-style: initial !important;
+					margin-left: 10px !important;
+				}
+				h1, h2, h3, h4, h5, h6 {
+					font-weight: bold !important;
+				}
+				</style>
+				<title>Code Review Bot</title>
+			</head>
+			<body>
+				<div id="root"></div>
+				<script type="module" nonce="${nonce}" crossorigin src="${scriptUri}"></script>
+			</body>
+			</html>`;
+    }
+}
+ChatGPTViewProvider.viewType = 'chatgpt.chatView';
+// This method is called when your extension is deactivated
+function deactivate() { }
+exports.deactivate = deactivate;
+function getNonce() {
+    let text = "";
+    const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    for (let i = 0; i < 32; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
+}
+//# sourceMappingURL=extension.js.map
