@@ -36,7 +36,8 @@
     "onCommand:chatgpt.optimize",
     "onCommand:chatgpt.findProblems",
     "onCommand:chatgpt.documentation",
-    "onCommand:chatgpt.logLine"
+    "onCommand:chatgpt.logLine",
+    "onLanguage:typescript"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -48,20 +49,10 @@
     ],
     "keybindings": [
       {
-        "command": "runCommands",
+        "command": "chatgpt.logLine",
         "key": "enter",
-        "when": "editorTextFocus",
-        "args": {
-          "commands": [
-            "chatgpt.logLine",
-            "editor.action.insertSnippet"
-          ],
-          "snippets":
-          [
-            "newline"
-          ]
+        "when": "editorTextFocus"
         }
-    }
     ],
     "commands": [
       {
