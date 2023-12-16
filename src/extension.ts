@@ -121,6 +121,7 @@ class CodeLogger {
 	}
 
 	constructor(private readonly _extensionUri: vscode.Uri) {
+		this._logToCSV('Logged on activation!\n');
 	}
 
 	logLine() {
@@ -132,6 +133,12 @@ class CodeLogger {
 		const {text} = activeEditor.document.lineAt(activeEditor.selection.active.line);
 		const line: string = text.toString();
 		this._logToCSV(line);
+
+		let newline = new vscode.SnippetString('\n');
+		activeEditor.insertSnippet(newline);
+	
+
+
 	}
 
 
