@@ -15,7 +15,9 @@ export function activate(context: vscode.ExtensionContext) {
 
 
 
+
 	console.log('activating extension "chatgpt"');
+
 	// Get the settings from the extension's configuration
 	const config = vscode.workspace.getConfiguration('chatgpt');
 
