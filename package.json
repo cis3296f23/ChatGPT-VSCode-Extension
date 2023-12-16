@@ -36,17 +36,11 @@
     "onCommand:chatgpt.optimize",
     "onCommand:chatgpt.findProblems",
     "onCommand:chatgpt.documentation",
-    "onCommand:chatgpt.logLine",
-    "onLanguage:typescript"
+    "onCommand:chatgpt.logLine"
   ],
   "main": "./dist/extension.js",
   "contributes": {
-    "snippets": [
 
-      {
-        "path": "snippets/extension-snippets.code-snippets"
-      }
-    ],
     "keybindings": [
       {
         "command": "chatgpt.logLine",
